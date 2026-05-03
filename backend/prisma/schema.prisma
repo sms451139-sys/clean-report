@@ -1,0 +1,213 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(STAFF)
+  phone     String?
+  profilePictureUrl String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  // Relations
+  properties      Property[]
+  cleaningReports CleaningReport[]
+}
+
+enum Role {
+  STAFF
+  MANAGER
+  OWNER
+}
+
+model Property {
+  id                  String  @id @default(uuid())
+  userId              String
+  propertyName        String
+  propertyCode        String?
+  address             String?
+  latitude            Decimal?
+  longitude           Decimal?
+  checklistTemplateId String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  deletedAt           DateTime?
+
+  // Relations
+  user               User   @relation(fields: [userId], references: [id])
+  cleaningReports    CleaningReport[]
+  issues             Issue[]
+  inventoryItems     InventoryItem[]
+  checklistTemplate  ChecklistTemplate?
+
+  @@index([userId])
+}
+
+model CleaningReport {
+  id            String  @id @default(uuid())
+  userId        String
+  propertyId    String
+  cleaningDate  DateTime
+  checkInTime   DateTime?
+  checkOutTime  DateTime?
+  staffName     String?
+  overallStatus Status  @default(NORMAL)
+  reportText    String?
+  reportFormat  Format  @default(BOTH)
+  isSubmitted   Boolean @default(false)
+  submittedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  user            User   @relation(fields: [userId], references: [id])
+  property        Property @relation(fields: [propertyId], references: [id])
+  checklistItems  ChecklistItem[]
+  photos          ReportPhoto[]
+  issues          Issue[]
+  inventoryItems  InventoryItem[]
+
+  @@index([userId, propertyId])
+  @@index([cleaningDate])
+}
+
+enum Status {
+  NORMAL
+  ISSUES_FOUND
+}
+
+enum Format {
+  OWNER
+  MANAGER
+  BOTH
+}
+
+model ChecklistItem {
+  id        String  @id @default(uuid())
+  reportId  String
+  location  String?
+  itemName  String
+  isCompleted Boolean @default(false)
+  notes     String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  report    CleaningReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+model ReportPhoto {
+  id              String  @id @default(uuid())
+  reportId        String
+  checklistItemId String?
+  photoUrl        String
+  location        String?
+  fileSize        Int?
+  uploadedAt      DateTime @default(now())
+
+  // Relations
+  report         CleaningReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@index([reportId])
+}
+
+model Issue {
+  id          String  @id @default(uuid())
+  reportId    String
+  propertyId  String
+  issueType   IssueType
+  description String
+  severity    Severity @default(LIGHT)
+  photoUrl    String?
+  isResolved  Boolean @default(false)
+  createdAt   DateTime @default(now())
+  resolvedAt  DateTime?
+
+  // Relations
+  report    CleaningReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  property  Property @relation(fields: [propertyId], references: [id])
+
+  @@index([reportId, propertyId])
+}
+
+enum IssueType {
+  DAMAGE
+  STAIN
+  MALFUNCTION
+  ODOR
+  OTHER
+}
+
+enum Severity {
+  LIGHT
+  MEDIUM
+  URGENT
+}
+
+model InventoryItem {
+  id        String  @id @default(uuid())
+  reportId  String
+  propertyId String
+  itemName  String
+  quantity  Int
+  unit      String?
+  createdAt DateTime @default(now())
+
+  // Relations
+  report   CleaningReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [propertyId], references: [id])
+
+  @@index([reportId, propertyId])
+}
+
+model ChecklistTemplate {
+  id        String  @id @default(uuid())
+  propertyId String? @unique
+  location  String?
+  items     Json    // JSON array of items
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  property  Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+}
+
+model ReportTemplate {
+  id            String  @id @default(uuid())
+  templateName  String
+  templateType  TemplateType
+  language      Language @default(JA)
+  content       String
+  isActive      Boolean @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+enum TemplateType {
+  NORMAL
+  WITH_ISSUES
+  DAMAGE
+  STAIN
+  URGENCY
+  FORGOTTEN_ITEMS
+}
+
+enum Language {
+  JA
+  EN
+}
