@@ -1,12 +1,17 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from './pages/LoginPage'
+import { RegisterPage } from './pages/RegisterPage'
+import { PropertiesPage } from './pages/PropertiesPage'
+import { ReportPage } from './pages/ReportPage'
 import { useAuthStore } from './store/authStore'
-
-// Placeholder components for now
-const PropertiesPage = () => <div className="p-8"><h1>物件管理（Coming Soon）</h1></div>
-const ReportPage = () => <div className="p-8"><h1>報告作成（Coming Soon）</h1></div>
-const HistoryPage = () => <div className="p-8"><h1>報告履歴（Coming Soon）</h1></div>
+import { Header } from './components/Layout/Header'
+const HistoryPage = () => (
+  <>
+    <Header />
+    <div className="p-8"><h1>報告履歴（Coming Soon）</h1></div>
+  </>
+)
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -19,6 +24,7 @@ export const App: React.FC = () => {
     <Router>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
           path="/properties"
           element={
@@ -28,7 +34,7 @@ export const App: React.FC = () => {
           }
         />
         <Route
-          path="/report"
+          path="/report/:propertyId"
           element={
             <PrivateRoute>
               <ReportPage />

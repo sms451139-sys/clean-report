@@ -32,3 +32,11 @@ yarn-error.log*
 # Database
 postgres_data/
 redis_data/
+*.db
+*.db-journal
+
+# Local env files
+.env.local
+.env.*.local
+.env.save
+.env.*.save

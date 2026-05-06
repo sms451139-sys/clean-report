@@ -6,16 +6,17 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
+
 
 model User {
   id        String   @id @default(uuid())
   email     String   @unique
   password  String
   name      String?
-  role      Role     @default(STAFF)
+  role      String   @default("STAFF")
   phone     String?
   profilePictureUrl String?
   createdAt DateTime @default(now())
@@ -27,11 +28,6 @@ model User {
   cleaningReports CleaningReport[]
 }
 
-enum Role {
-  STAFF
-  MANAGER
-  OWNER
-}
 
 model Property {
   id                  String  @id @default(uuid())
@@ -64,9 +60,9 @@ model CleaningReport {
   checkInTime   DateTime?
   checkOutTime  DateTime?
   staffName     String?
-  overallStatus Status  @default(NORMAL)
+  overallStatus String  @default("NORMAL")
   reportText    String?
-  reportFormat  Format  @default(BOTH)
+  reportFormat  String  @default("BOTH")
   isSubmitted   Boolean @default(false)
   submittedAt   DateTime?
   createdAt     DateTime @default(now())
@@ -84,29 +80,25 @@ model CleaningReport {
   @@index([cleaningDate])
 }
 
-enum Status {
-  NORMAL
-  ISSUES_FOUND
-}
-
-enum Format {
-  OWNER
-  MANAGER
-  BOTH
-}
 
 model ChecklistItem {
-  id        String  @id @default(uuid())
-  reportId  String
-  location  String?
-  itemName  String
-  isCompleted Boolean @default(false)
-  notes     String?
-  createdAt DateTime @default(now())
+  id                  String  @id @default(uuid())
+  checklistTemplateId String?
+  reportId            String?
+  title               String
+  description         String?
+  order               Int     @default(0)
+  isCompleted         Boolean @default(false)
+  location            String?
+  itemName            String?
+  notes               String?
+  createdAt           DateTime @default(now())
 
   // Relations
-  report    CleaningReport @relation(fields: [reportId], references: [id], onDelete: Cascade)
+  checklistTemplate   ChecklistTemplate? @relation(fields: [checklistTemplateId], references: [id], onDelete: Cascade)
+  report              CleaningReport? @relation(fields: [reportId], references: [id], onDelete: Cascade)
 
+  @@index([checklistTemplateId])
   @@index([reportId])
 }
 
@@ -129,9 +121,9 @@ model Issue {
   id          String  @id @default(uuid())
   reportId    String
   propertyId  String
-  issueType   IssueType
+  issueType   String
   description String
-  severity    Severity @default(LIGHT)
+  severity    String @default("LIGHT")
   photoUrl    String?
   isResolved  Boolean @default(false)
   createdAt   DateTime @default(now())
@@ -144,19 +136,6 @@ model Issue {
   @@index([reportId, propertyId])
 }
 
-enum IssueType {
-  DAMAGE
-  STAIN
-  MALFUNCTION
-  ODOR
-  OTHER
-}
-
-enum Severity {
-  LIGHT
-  MEDIUM
-  URGENT
-}
 
 model InventoryItem {
   id        String  @id @default(uuid())
@@ -175,39 +154,27 @@ model InventoryItem {
 }
 
 model ChecklistTemplate {
-  id        String  @id @default(uuid())
-  propertyId String? @unique
-  location  String?
-  items     Json    // JSON array of items
-  isDefault Boolean @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String  @id @default(uuid())
+  propertyId  String? @unique
+  title       String
+  description String?
+  isDefault   Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
   property  Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  items     ChecklistItem[]
 }
 
 model ReportTemplate {
   id            String  @id @default(uuid())
   templateName  String
-  templateType  TemplateType
-  language      Language @default(JA)
+  templateType  String
+  language      String @default("JA")
   content       String
   isActive      Boolean @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
 
-enum TemplateType {
-  NORMAL
-  WITH_ISSUES
-  DAMAGE
-  STAIN
-  URGENCY
-  FORGOTTEN_ITEMS
-}
-
-enum Language {
-  JA
-  EN
-}

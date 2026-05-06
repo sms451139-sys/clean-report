@@ -13,12 +13,14 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  logger.error({
-    error: err.message,
+  const errorLog = {
+    message: err.message,
     stack: err instanceof Error ? err.stack : undefined,
     path: req.path,
     method: req.method,
-  });
+  };
+
+  logger.error(JSON.stringify(errorLog));
 
   if (err instanceof AppError) {
     return res.status(err.statusCode).json({
