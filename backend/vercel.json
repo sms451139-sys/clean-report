@@ -1,0 +1,4 @@
+{
+  "buildCommand": "npm install && prisma generate && tsc",
+  "outputDirectory": "dist"
+}
