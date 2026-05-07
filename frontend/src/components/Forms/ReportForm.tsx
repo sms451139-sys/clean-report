@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { reportService, ReportPhoto } from '../../services/report.service'
+import { reportService } from '../../services/report.service'
 import { checklistService, Checklist } from '../../services/checklist.service'
 
 interface ReportFormProps {
@@ -16,6 +16,7 @@ interface ReportFormData {
   staffName: string
   reportFormat: 'OWNER' | 'MANAGER' | 'BOTH'
   checklistId?: string
+  reportText?: string
 }
 
 export const ReportForm: React.FC<ReportFormProps> = ({
@@ -33,7 +34,6 @@ export const ReportForm: React.FC<ReportFormProps> = ({
   const [loading, setLoading] = useState(true)
   const [selectedPhotos, setSelectedPhotos] = useState<File[]>([])
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([])
-  const [uploadingPhotos, setUploadingPhotos] = useState(false)
   const [issues, setIssues] = useState<Array<{ issueType: string; description: string; severity: string }>>([])
   const [showIssueForm, setShowIssueForm] = useState(false)
   const [newIssue, setNewIssue] = useState({ issueType: '', description: '', severity: 'LIGHT' })
@@ -86,22 +86,13 @@ export const ReportForm: React.FC<ReportFormProps> = ({
 
       // Upload photos if selected
       if (selectedPhotos.length > 0) {
-        setUploadingPhotos(true)
         for (const photo of selectedPhotos) {
           try {
-            const photoUrl = await new Promise<string>((resolve) => {
-              const reader = new FileReader()
-              reader.onload = (e) => {
-                resolve(e.target?.result as string)
-              }
-              reader.readAsDataURL(photo)
-            })
-            await reportService.uploadPhoto(report.id, photoUrl)
+            await reportService.uploadPhotoBlob(report.id, photo)
           } catch (err) {
             console.error('Failed to upload photo:', err)
           }
         }
-        setUploadingPhotos(false)
       }
 
       // Create issues if any
@@ -159,93 +150,130 @@ export const ReportForm: React.FC<ReportFormProps> = ({
   }
 
   if (loading) {
-    return <div className="text-center text-gray-500">読み込み中...</div>
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="text-center">
+          <div className="inline-block w-10 h-10 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin mb-3"></div>
+          <p className="text-gray-600">読み込み中...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold text-gray-900 mb-6">新規レポート作成</h2>
+    <form onSubmit={handleSubmit(onSubmit)} className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+      <h2 className="text-2xl font-bold text-gray-900 mb-8">📋 新規レポート作成</h2>
 
-      <div className="space-y-4">
-        {/* Cleaning Date */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            清掃日 <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="date"
-            {...register('cleaningDate', { required: '清掃日は必須です' })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          {errors.cleaningDate && (
-            <p className="text-red-500 text-sm mt-1">{errors.cleaningDate.message}</p>
-          )}
-        </div>
+      <div className="space-y-6">
+        {/* Basic Information Section */}
+        <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-6 border border-indigo-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+            <span className="text-xl">📝</span> 基本情報
+          </h3>
 
-        {/* Check-in Time */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            チェックイン時刻
-          </label>
-          <input
-            type="time"
-            {...register('checkInTime')}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Cleaning Date */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                清掃日 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                {...register('cleaningDate', { required: '清掃日は必須です' })}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              />
+              {errors.cleaningDate && (
+                <p className="text-red-600 text-sm mt-2 font-medium">{errors.cleaningDate.message}</p>
+              )}
+            </div>
 
-        {/* Check-out Time */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            チェックアウト時刻
-          </label>
-          <input
-            type="time"
-            {...register('checkOutTime')}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+            {/* Staff Name */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                スタッフ名
+              </label>
+              <input
+                type="text"
+                placeholder="例: 佐藤太郎"
+                {...register('staffName')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              />
+            </div>
 
-        {/* Staff Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            スタッフ名
-          </label>
-          <input
-            type="text"
-            placeholder="例: 佐藤太郎"
-            {...register('staffName')}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+            {/* Check-in Time */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                チェックイン時刻
+              </label>
+              <input
+                type="time"
+                {...register('checkInTime')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              />
+            </div>
 
-        {/* Report Format */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            レポート形式 <span className="text-red-500">*</span>
-          </label>
-          <select
-            {...register('reportFormat', { required: 'レポート形式は必須です' })}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="BOTH">オーナー向け・マネージャー向け</option>
-            <option value="OWNER">オーナー向けのみ</option>
-            <option value="MANAGER">マネージャー向けのみ</option>
-          </select>
-          {errors.reportFormat && (
-            <p className="text-red-500 text-sm mt-1">{errors.reportFormat.message}</p>
-          )}
+            {/* Check-out Time */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                チェックアウト時刻
+              </label>
+              <input
+                type="time"
+                {...register('checkOutTime')}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              />
+            </div>
+          </div>
+
+          {/* Report Format */}
+          <div className="mt-6 border-t border-indigo-200 pt-6">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              レポート形式 <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-white transition-colors">
+                <input
+                  type="radio"
+                  value="BOTH"
+                  {...register('reportFormat', { required: 'レポート形式は必須です' })}
+                  className="w-4 h-4 text-indigo-600"
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">両向け</span>
+              </label>
+              <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-white transition-colors">
+                <input
+                  type="radio"
+                  value="OWNER"
+                  {...register('reportFormat', { required: 'レポート形式は必須です' })}
+                  className="w-4 h-4 text-indigo-600"
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">オーナー向け</span>
+              </label>
+              <label className="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-white transition-colors">
+                <input
+                  type="radio"
+                  value="MANAGER"
+                  {...register('reportFormat', { required: 'レポート形式は必須です' })}
+                  className="w-4 h-4 text-indigo-600"
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700">マネージャー向け</span>
+              </label>
+            </div>
+            {errors.reportFormat && (
+              <p className="text-red-600 text-sm mt-2 font-medium">{errors.reportFormat.message}</p>
+            )}
+          </div>
         </div>
 
         {/* Checklist Selection */}
         {checklists.length > 0 && (
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              チェックリスト
+            <label className="block text-sm font-semibold text-gray-700 mb-3">
+              ✓ チェックリスト参照
             </label>
             <select
               {...register('checklistId')}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
             >
               <option value="">チェックリストを選択...</option>
               {checklists.map((checklist) => (
@@ -258,67 +286,81 @@ export const ReportForm: React.FC<ReportFormProps> = ({
           </div>
         )}
 
-        {/* Photo Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            写真をアップロード
+        {/* Photo Upload Section */}
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-6 border border-purple-100">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center gap-2">
+            <span className="text-xl">📸</span> 写真ドキュメント
+          </h3>
+
+          <label className="block">
+            <div className="border-2 border-dashed border-purple-300 rounded-lg p-8 text-center cursor-pointer hover:border-purple-400 hover:bg-purple-100 transition-all">
+              <div className="text-3xl mb-3">📷</div>
+              <p className="text-sm font-semibold text-gray-700 mb-1">
+                写真をドラッグ＆ドロップ
+              </p>
+              <p className="text-xs text-gray-600">または、クリックして選択</p>
+              <p className="text-xs text-gray-500 mt-3">最大50MBまで。複数選択可</p>
+            </div>
+            <input
+              type="file"
+              multiple
+              accept="image/*"
+              onChange={handlePhotoSelection}
+              className="hidden"
+            />
           </label>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={handlePhotoSelection}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-          <p className="text-xs text-gray-500 mt-1">複数の写真を選択できます</p>
+
+          {/* Photo Previews */}
+          {photoPreviews.length > 0 && (
+            <div className="mt-6">
+              <p className="text-sm font-semibold text-gray-700 mb-4">
+                選択済み: {photoPreviews.length} 枚
+              </p>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {photoPreviews.map((preview, index) => (
+                  <div key={index} className="relative group rounded-lg overflow-hidden border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                    <img
+                      src={preview}
+                      alt={`Preview ${index + 1}`}
+                      className="w-full h-32 object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(index)}
+                      className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center"
+                    >
+                      <span className="text-white text-2xl font-bold opacity-0 group-hover:opacity-100 transition-opacity">
+                        ×
+                      </span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Photo Previews */}
-        {photoPreviews.length > 0 && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              選択した写真 ({photoPreviews.length})
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              {photoPreviews.map((preview, index) => (
-                <div key={index} className="relative group">
-                  <img
-                    src={preview}
-                    alt={`Preview ${index + 1}`}
-                    className="w-full h-24 object-cover rounded-lg border border-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removePhoto(index)}
-                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    ×
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Issue Reporting */}
-        <div className="border-t pt-4">
-          <div className="flex items-center justify-between mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              報告された問題
-            </label>
-            <button
-              type="button"
-              onClick={() => setShowIssueForm(!showIssueForm)}
-              className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded hover:bg-blue-200"
-            >
-              {showIssueForm ? 'キャンセル' : '問題を追加'}
-            </button>
+        {/* Issue Reporting Section */}
+        <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-6 border border-red-100">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <span className="text-xl">⚠️</span> 問題報告
+            </h3>
+            {!showIssueForm && (
+              <button
+                type="button"
+                onClick={() => setShowIssueForm(true)}
+                className="text-sm bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 font-medium transition-colors"
+              >
+                + 問題を追加
+              </button>
+            )}
           </div>
 
           {showIssueForm && (
-            <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-3">
+            <div className="bg-white p-6 rounded-lg mb-6 space-y-4 border border-red-200">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   問題タイプ
                 </label>
                 <input
@@ -326,65 +368,100 @@ export const ReportForm: React.FC<ReportFormProps> = ({
                   placeholder="例: 破損、汚れ、欠落"
                   value={newIssue.issueType}
                   onChange={(e) => setNewIssue((prev) => ({ ...prev, issueType: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   説明
                 </label>
                 <textarea
                   placeholder="問題の詳細説明"
                   value={newIssue.description}
                   onChange={(e) => setNewIssue((prev) => ({ ...prev, description: e.target.value }))}
-                  rows={2}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
                   重大度
                 </label>
-                <select
-                  value={newIssue.severity}
-                  onChange={(e) => setNewIssue((prev) => ({ ...prev, severity: e.target.value }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="LIGHT">軽微</option>
-                  <option value="MEDIUM">中程度</option>
-                  <option value="SEVERE">重大</option>
-                </select>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: 'LIGHT', label: '軽微', color: 'yellow' },
+                    { value: 'MEDIUM', label: '中程度', color: 'orange' },
+                    { value: 'SEVERE', label: '重大', color: 'red' },
+                  ].map((option) => (
+                    <label
+                      key={option.value}
+                      className={`p-3 rounded-lg cursor-pointer border-2 transition-all ${
+                        newIssue.severity === option.value
+                          ? `border-${option.color}-500 bg-${option.color}-50`
+                          : 'border-gray-300 hover:border-gray-400'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        value={option.value}
+                        checked={newIssue.severity === option.value}
+                        onChange={(e) =>
+                          setNewIssue((prev) => ({ ...prev, severity: e.target.value }))
+                        }
+                        className="hidden"
+                      />
+                      <span className="text-sm font-medium text-gray-700">{option.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
-              <button
-                type="button"
-                onClick={addIssue}
-                className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 rounded-lg text-sm"
-              >
-                問題を追加
-              </button>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={addIssue}
+                  className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-3 rounded-lg transition-colors"
+                >
+                  追加
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowIssueForm(false)}
+                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-colors"
+                >
+                  キャンセル
+                </button>
+              </div>
             </div>
           )}
 
           {issues.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {issues.map((issue, index) => (
-                <div key={index} className="border-l-4 border-yellow-500 bg-yellow-50 p-3 rounded flex justify-between items-start">
+                <div key={index} className="border-l-4 border-red-500 bg-white p-4 rounded-lg flex justify-between items-start border border-red-100">
                   <div className="flex-1">
-                    <p className="font-medium text-gray-900 text-sm">{issue.issueType}</p>
-                    <p className="text-sm text-gray-700 mt-1">{issue.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      重大度: {issue.severity === 'LIGHT' ? '軽微' : issue.severity === 'MEDIUM' ? '中程度' : '重大'}
-                    </p>
+                    <p className="font-semibold text-red-900">{issue.issueType}</p>
+                    <p className="text-sm text-red-800 mt-2">{issue.description}</p>
+                    <div className="mt-3 inline-block">
+                      <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                        issue.severity === 'LIGHT'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : issue.severity === 'MEDIUM'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}>
+                        {issue.severity === 'LIGHT' ? '軽微' : issue.severity === 'MEDIUM' ? '中程度' : '重大'}
+                      </span>
+                    </div>
                   </div>
                   <button
                     type="button"
                     onClick={() => removeIssue(index)}
-                    className="text-red-600 hover:text-red-700 font-bold text-lg ml-2"
+                    className="text-red-600 hover:text-red-800 font-bold text-xl ml-3"
                   >
-                    ×
+                    ✕
                   </button>
                 </div>
               ))}
@@ -396,9 +473,9 @@ export const ReportForm: React.FC<ReportFormProps> = ({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 text-white font-medium py-3 rounded-lg transition-colors"
+          className="w-full bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 disabled:from-gray-400 disabled:to-gray-400 text-white font-semibold py-4 rounded-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:shadow-none text-lg"
         >
-          {isSubmitting ? '作成中...' : 'レポートを作成'}
+          {isSubmitting ? '作成中...' : '✓ レポートを作成'}
         </button>
       </div>
     </form>

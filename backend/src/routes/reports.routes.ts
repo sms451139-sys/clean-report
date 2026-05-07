@@ -1,9 +1,11 @@
 import { Router } from 'express'
+import multer from 'multer'
 import { authenticate } from '../middleware/auth'
 import { ReportController } from '../controllers/report.controller'
 
 const router = Router()
 const reportController = new ReportController()
+const upload = multer({ storage: multer.memoryStorage() })
 
 // Create report
 router.post('/', authenticate, (req, res, next) =>
@@ -40,7 +42,12 @@ router.delete('/:id', authenticate, (req, res, next) =>
   reportController.delete(req, res, next)
 )
 
-// Upload photo to report
+// Upload photo to report (Vercel Blob - for file uploads)
+router.post('/:reportId/photos/blob', authenticate, upload.single('photo'), (req, res, next) =>
+  reportController.uploadPhotoBlob(req, res, next)
+)
+
+// Upload photo to report (legacy - for Base64)
 router.post('/:reportId/photos', authenticate, (req, res, next) =>
   reportController.uploadPhoto(req, res, next)
 )

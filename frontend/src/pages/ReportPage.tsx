@@ -32,6 +32,7 @@ export const ReportPage: React.FC = () => {
       const timer = setTimeout(() => setSuccessMessage(null), 3000)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [successMessage])
 
   const loadChecklists = async () => {
@@ -51,7 +52,7 @@ export const ReportPage: React.FC = () => {
     }
   }
 
-  const handleReportCreated = (report: Report) => {
+  const handleReportCreated = () => {
     setSuccessMessage('レポートを作成しました')
     setRefreshTrigger((prev) => prev + 1)
     setViewMode('list')
@@ -70,43 +71,43 @@ export const ReportPage: React.FC = () => {
   return (
     <>
       <Header />
-      <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-4 mb-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-10">
+          <div className="flex items-center gap-3 mb-10">
             <button
               onClick={() => navigate('/properties')}
-              className="text-blue-500 hover:text-blue-600 font-medium flex items-center gap-2"
+              className="inline-flex items-center gap-2 px-3 py-2 text-indigo-600 hover:text-indigo-700 font-medium hover:bg-indigo-50 rounded-lg transition-colors"
             >
               ← 戻る
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">報告作成</h1>
+            <h1 className="text-4xl font-bold text-gray-900">レポート作成</h1>
           </div>
 
           {/* Success Message */}
           {successMessage && (
-            <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 text-green-800">
-              {successMessage}
+            <div className="mb-6 bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-emerald-800 font-medium shadow-sm">
+              ✓ {successMessage}
             </div>
           )}
 
           {/* Tab Navigation */}
-          <div className="flex gap-4 mb-6">
+          <div className="flex gap-3 mb-8">
             <button
               onClick={() => setViewMode('create')}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 viewMode === 'create'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  ? 'bg-indigo-600 text-white shadow-lg hover:bg-indigo-700'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-md'
               }`}
             >
               新規レポート作成
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`px-6 py-2 rounded-lg font-medium transition-colors ${
+              className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                 viewMode === 'list'
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                  ? 'bg-indigo-600 text-white shadow-lg hover:bg-indigo-700'
+                  : 'bg-white text-gray-700 border border-gray-200 hover:border-gray-300 hover:shadow-md'
               }`}
             >
               レポート一覧
@@ -114,11 +115,16 @@ export const ReportPage: React.FC = () => {
           </div>
 
           {loading ? (
-            <div className="text-center text-gray-500">読み込み中...</div>
+            <div className="flex justify-center items-center py-16">
+              <div className="text-center">
+                <div className="inline-block w-12 h-12 border-4 border-gray-200 border-t-indigo-600 rounded-full animate-spin mb-4"></div>
+                <p className="text-gray-600">読み込み中...</p>
+              </div>
+            </div>
           ) : (
             <>
               {viewMode === 'create' && propertyId && (
-                <div className="mb-8">
+                <div className="mb-10">
                   <ReportForm
                     propertyId={propertyId}
                     onSuccess={handleReportCreated}
@@ -131,8 +137,8 @@ export const ReportPage: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   {/* Report list */}
                   <div className="lg:col-span-1">
-                    <div className="bg-white rounded-lg shadow-md p-4">
-                      <h2 className="font-bold text-gray-900 mb-4">レポート一覧</h2>
+                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                      <h2 className="text-lg font-bold text-gray-900 mb-5">レポート一覧</h2>
                       <ReportList
                         propertyId={propertyId}
                         onSelectReport={setSelectedReport}
@@ -146,7 +152,8 @@ export const ReportPage: React.FC = () => {
                     {selectedReport ? (
                       <ReportDetail report={selectedReport} onSubmitSuccess={handleReportSubmitted} />
                     ) : (
-                      <div className="bg-white rounded-lg shadow-md p-8 text-center">
+                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
+                        <div className="text-gray-400 text-4xl mb-3">📋</div>
                         <p className="text-gray-500">
                           左からレポートを選択して詳細を表示
                         </p>
@@ -158,22 +165,22 @@ export const ReportPage: React.FC = () => {
 
               {/* Checklist View */}
               {checklists.length > 0 && (
-                <div className="mt-12 pt-8 border-t border-gray-200">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-6">チェックリスト管理</h2>
+                <div className="mt-16 pt-10 border-t border-gray-200">
+                  <h2 className="text-3xl font-bold text-gray-900 mb-8">チェックリスト</h2>
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     {/* Checklist selector */}
                     <div className="lg:col-span-1">
-                      <div className="bg-white rounded-lg shadow-md p-4">
-                        <h3 className="font-bold text-gray-900 mb-4">チェックリスト</h3>
+                      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                        <h3 className="font-bold text-gray-900 mb-5">リスト選択</h3>
                         <div className="space-y-2">
                           {checklists.map((checklist) => (
                             <button
                               key={checklist.id}
                               onClick={() => setSelectedChecklist(checklist)}
-                              className={`w-full text-left px-4 py-3 rounded-lg transition-colors ${
+                              className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-200 ${
                                 selectedChecklist?.id === checklist.id
-                                  ? 'bg-blue-500 text-white font-medium'
-                                  : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                                  ? 'bg-indigo-600 text-white font-medium shadow-md'
+                                  : 'bg-gray-50 text-gray-900 hover:bg-gray-100 border border-gray-200'
                               }`}
                             >
                               {checklist.title}

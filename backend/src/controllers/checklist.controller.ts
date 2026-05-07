@@ -100,7 +100,7 @@ export class ChecklistController {
         throw new AppError(404, 'Checklist not found')
       }
 
-      if (checklist.property.userId !== userId) {
+      if (!checklist.property || checklist.property.userId !== userId) {
         throw new AppError(403, 'Unauthorized')
       }
 
@@ -125,7 +125,7 @@ export class ChecklistController {
         throw new AppError(404, 'Checklist not found')
       }
 
-      if (checklist.property.userId !== userId) {
+      if (!checklist.property || checklist.property.userId !== userId) {
         throw new AppError(403, 'Unauthorized')
       }
 
@@ -163,7 +163,7 @@ export class ChecklistController {
         throw new AppError(404, 'Checklist not found')
       }
 
-      if (checklist.property.userId !== userId) {
+      if (!checklist.property || checklist.property.userId !== userId) {
         throw new AppError(403, 'Unauthorized')
       }
 
@@ -201,7 +201,7 @@ export class ChecklistController {
         throw new AppError(404, 'Checklist not found')
       }
 
-      if (checklist.property.userId !== userId) {
+      if (!checklist.property || checklist.property.userId !== userId) {
         throw new AppError(403, 'Unauthorized')
       }
 

@@ -36,51 +36,65 @@ export const ReportList: React.FC<ReportListProps> = ({
   }
 
   if (loading) {
-    return <div className="text-center text-gray-500 py-8">読み込み中...</div>
+    return (
+      <div className="flex justify-center items-center py-8">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-3 border-gray-200 border-t-indigo-600 rounded-full animate-spin mb-2"></div>
+          <p className="text-gray-600 text-sm">読み込み中...</p>
+        </div>
+      </div>
+    )
   }
 
   if (error) {
     return (
-      <div className="bg-red-50 text-red-700 p-4 rounded-lg mb-4">
-        {error}
+      <div className="bg-red-50 text-red-700 p-4 rounded-lg border border-red-200 text-sm font-medium">
+        ⚠️ {error}
       </div>
     )
   }
 
   if (reports.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <p className="text-gray-600">レポートがまだ作成されていません</p>
+      <div className="bg-gray-50 rounded-lg p-8 text-center border border-gray-200">
+        <div className="text-gray-400 text-3xl mb-2">📭</div>
+        <p className="text-gray-600 font-medium">レポートがまだ作成されていません</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {reports.map((report) => (
         <button
           key={report.id}
           onClick={() => onSelectReport(report)}
-          className="w-full text-left bg-white hover:bg-blue-50 border border-gray-200 rounded-lg p-4 transition-colors"
+          className="w-full text-left bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg p-4 transition-all duration-200 shadow-sm hover:shadow-md"
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium text-gray-900">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <p className="font-semibold text-gray-900">
                 {formatDate(new Date(report.cleaningDate))}
               </p>
-              <p className="text-sm text-gray-500 mt-1">
-                {report.staffName && `スタッフ: ${report.staffName}`}
+              <p className="text-sm text-gray-500 mt-2 flex flex-wrap items-center gap-2">
+                {report.staffName && (
+                  <span>👤 {report.staffName}</span>
+                )}
                 {report.isSubmitted && (
-                  <span className="ml-2 inline-block px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
-                    提出済み
+                  <span className="inline-block px-2 py-1 bg-emerald-100 text-emerald-800 text-xs rounded-full font-medium">
+                    ✓ 提出済み
                   </span>
                 )}
               </p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">
-                {report.overallStatus === 'NORMAL' ? '問題なし' : '問題あり'}
-              </p>
+            <div className="text-right ml-4">
+              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                report.overallStatus === 'NORMAL'
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {report.overallStatus === 'NORMAL' ? '✓ 問題なし' : '⚠️ 問題あり'}
+              </span>
             </div>
           </div>
         </button>

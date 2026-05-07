@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { PrismaClient } from '@prisma/client'
+import { put } from '@vercel/blob'
 import { AppError } from '../middleware/errorHandler'
 import { AuthRequest } from '../middleware/auth'
 import { logger } from '../utils/logger'
@@ -282,8 +283,6 @@ export class ReportController {
       const { photoUrl, location, fileSize } = req.body
       const userId = req.user?.userId
 
-      logger.info(`Upload photo request: reportId=${reportId}, userId=${userId}, photoUrl length=${photoUrl?.length}`)
-
       if (!photoUrl) {
         throw new AppError(400, 'photoUrl is required')
       }
@@ -297,7 +296,7 @@ export class ReportController {
         throw new AppError(404, 'Report not found')
       }
 
-      if (report.property.userId !== userId) {
+      if (!report.property || report.property.userId !== userId) {
         throw new AppError(403, 'Unauthorized')
       }
 
@@ -306,7 +305,7 @@ export class ReportController {
           reportId,
           photoUrl,
           location: location || null,
-          fileSize: photoUrl.length || null,
+          fileSize: fileSize || null,
         },
       })
 
@@ -314,6 +313,52 @@ export class ReportController {
       res.status(201).json(photo)
     } catch (error) {
       logger.error(`Photo upload error:`, error)
+      next(error)
+    }
+  }
+
+  async uploadPhotoBlob(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { reportId } = req.params
+      const { location } = req.body
+      const userId = req.user?.userId
+
+      if (!req.file) {
+        throw new AppError(400, 'File is required')
+      }
+
+      const report = await prisma.cleaningReport.findUnique({
+        where: { id: reportId },
+        include: { property: true },
+      })
+
+      if (!report) {
+        throw new AppError(404, 'Report not found')
+      }
+
+      if (!report.property || report.property.userId !== userId) {
+        throw new AppError(403, 'Unauthorized')
+      }
+
+      const filename = `reports/${reportId}/${Date.now()}-${req.file.originalname}`
+      const blob = await put(filename, req.file.buffer, {
+        access: 'public',
+        contentType: req.file.mimetype,
+      })
+
+      const photo = await prisma.reportPhoto.create({
+        data: {
+          reportId,
+          photoUrl: blob.url,
+          location: location || null,
+          fileSize: req.file.size,
+        },
+      })
+
+      logger.info(`Photo uploaded to Vercel Blob: ${reportId}/${photo.id}`)
+      res.status(201).json(photo)
+    } catch (error) {
+      logger.error(`Photo Blob upload error:`, error)
       next(error)
     }
   }

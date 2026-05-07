@@ -86,6 +86,20 @@ export const reportService = {
     return response.data
   },
 
+  async uploadPhotoBlob(reportId: string, file: File, location?: string): Promise<ReportPhoto> {
+    const formData = new FormData()
+    formData.append('photo', file)
+    if (location) {
+      formData.append('location', location)
+    }
+    const response = await apiClient.post(`/reports/${reportId}/photos/blob`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+    return response.data
+  },
+
   async deletePhoto(reportId: string, photoId: string): Promise<void> {
     await apiClient.delete(`/reports/${reportId}/photos/${photoId}`)
   },
