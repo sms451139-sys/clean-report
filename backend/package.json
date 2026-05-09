@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "CleanReport API - 民泊清掃完了報告アプリ",
   "main": "dist/app.js",
-  "type": "module",
   "scripts": {
     "dev": "tsx watch src/app.ts",
     "build": "npm run prisma:generate && tsc",
